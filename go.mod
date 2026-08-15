@@ -1,10 +1,11 @@
-module github.com/gokrazy/gokrazy
+module github.com/slashformotion/FORK-gokrazy
 
 go 1.26
 
 require (
 	github.com/anatol/vmtest v0.0.0-20260509163454-0d3e5bd9399c
 	github.com/beevik/ntp v1.5.0
+	github.com/gokrazy/gokrazy v0.0.0-20260703061218-a4a45a20149d
 	github.com/gokrazy/internal v0.0.0-20260625065634-6994f9152c44
 	github.com/google/gopacket v1.1.19
 	github.com/google/renameio/v2 v2.0.2
