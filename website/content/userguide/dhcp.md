@@ -40,6 +40,19 @@ If you configure gokrazy to [connect to a WiFi network](/userguide/wifi/), the
 instance](https://github.com/gokrazy/wifi/blob/320785ba3e91dac849e28d888c1cf6e6568320d0/wifi.go#L83)
 of the gokrazy DHCP client with the `-interface=wlan0` flag set.
 
+## NTP Servers
+
+The DHCP client requests DHCP option 42 (NTP servers) in addition to the usual
+IP, router and DNS options. If your DHCP server provides NTP servers, they are
+written to `/tmp/ntp-servers` (one IP address per line), from where the
+[gokrazy NTP client](/userguide/ntp/) picks them up — see the [NTP
+userguide page](/userguide/ntp/) for details.
+
+If a lease contains no NTP servers, the file is removed, so that the NTP client
+falls back to its default servers. Note that the
+[static network configuration](#static-network-configuration) does not support
+specifying NTP servers.
+
 ## Static Network Configuration
 
 If you want the DHCP client to not actually fetch a lease, but apply a

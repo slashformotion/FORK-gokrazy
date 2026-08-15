@@ -7,8 +7,10 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,12 +19,20 @@ import (
 
 const timefilePath = "ntp-time-at-last-shutdown" // Our process is started in /perm/home/ntp.
 
-var servers = []string{
+const dhcpNTPServersPath = "/tmp/ntp-servers"
+
+var defaultServers = []string{
 	"0.gokrazy.pool.ntp.org",
 	"1.gokrazy.pool.ntp.org",
 	"2.gokrazy.pool.ntp.org",
 	"3.gokrazy.pool.ntp.org",
 }
+
+var (
+	servers    = defaultServers
+	cliServers bool
+	lastSource string
+)
 
 func setTimeOfDay(t time.Time, source string) error {
 	tv := syscall.NsecToTimeval(t.UnixNano())
@@ -33,7 +43,44 @@ func setTimeOfDay(t time.Time, source string) error {
 	return nil
 }
 
+func readDHCPServers() []string {
+	b, err := os.ReadFile(dhcpNTPServersPath)
+	if err != nil {
+		return nil
+	}
+	var servers []string
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if net.ParseIP(line) == nil {
+			continue
+		}
+		servers = append(servers, line)
+	}
+	return servers
+}
+
+func updateServers() {
+	if cliServers {
+		return
+	}
+	source := "default pool"
+	s := defaultServers
+	if dhcp := readDHCPServers(); len(dhcp) > 0 {
+		source = "DHCP"
+		s = dhcp
+	}
+	if source != lastSource {
+		log.Printf("using NTP servers from %s: %v", source, s)
+		lastSource = source
+	}
+	servers = s
+}
+
 func set(rtc *os.File) error {
+	updateServers()
 	server := servers[rand.Intn(len(servers))]
 	r, err := ntp.Query(server)
 	if err != nil {
@@ -92,6 +139,7 @@ func main() {
 
 	if len(flag.Args()) > 0 {
 		servers = flag.Args()
+		cliServers = true
 		log.Printf("using command line supplied server list: %v", servers)
 	}
 
