@@ -1,9 +1,6 @@
 ---
 title: "Blocky DNS ad-blocker"
 weight: 40
-aliases:
-  - /userguide/blocky/
-  - /userguide/install/blocky/
 ---
 
 [Blocky](https://github.com/0xERR0R/blocky) is a DNS proxy and ad-blocker for
