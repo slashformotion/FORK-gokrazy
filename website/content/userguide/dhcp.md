@@ -42,16 +42,10 @@ of the gokrazy DHCP client with the `-interface=wlan0` flag set.
 
 ## NTP Servers
 
-The DHCP client requests DHCP option 42 (NTP servers) in addition to the usual
-IP, router and DNS options. If your DHCP server provides NTP servers, they are
-written to `/tmp/ntp-servers` (one IP address per line), from where the
-[gokrazy NTP client](/userguide/ntp/) picks them up — see the [NTP
-userguide page](/userguide/ntp/) for details.
-
-If a lease contains no NTP servers, the file is removed, so that the NTP client
-falls back to its default servers. Note that the
-[static network configuration](#static-network-configuration) does not support
-specifying NTP servers.
+The DHCP client requests NTP servers (DHCP option 42) in addition to the usual
+IP, router and DNS options. If your DHCP server provides NTP servers, the
+[gokrazy NTP client](/userguide/ntp/) uses them automatically; otherwise it
+falls back to its default servers.
 
 ## Static Network Configuration
 
