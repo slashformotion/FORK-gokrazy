@@ -32,6 +32,16 @@ var (
 	servers    = defaultServers
 	cliServers bool
 	lastSource string
+
+	dhcpFailures     int
+	dhcpFallbackTill time.Time
+)
+
+// After this many consecutive failed queries to DHCP-provided servers, the
+// default pool is used for dhcpFallbackDuration before they are tried again.
+const (
+	dhcpFailureThreshold = 5
+	dhcpFallbackDuration = 10 * time.Minute
 )
 
 func setTimeOfDay(t time.Time, source string) error {
@@ -63,30 +73,49 @@ func readDHCPServers() []string {
 	return servers
 }
 
-func updateServers() {
+// updateServers selects which servers to query next and reports whether the
+// selected servers come from DHCP.
+func updateServers() (fromDHCP bool) {
 	if cliServers {
-		return
+		return false
 	}
 	source := "default pool"
 	s := defaultServers
-	if dhcp := readDHCPServers(); len(dhcp) > 0 {
+	if dhcp := readDHCPServers(); len(dhcp) > 0 && time.Now().After(dhcpFallbackTill) {
 		source = "DHCP"
 		s = dhcp
+		fromDHCP = true
 	}
 	if source != lastSource {
 		log.Printf("using NTP servers from %s: %v", source, s)
 		lastSource = source
 	}
 	servers = s
+	return fromDHCP
+}
+
+func dhcpQueryFailed() {
+	dhcpFailures++
+	if dhcpFailures < dhcpFailureThreshold {
+		return
+	}
+	dhcpFailures = 0
+	dhcpFallbackTill = time.Now().Add(dhcpFallbackDuration)
+	log.Printf("DHCP-provided NTP servers unreachable after %d attempts, using default pool for %v",
+		dhcpFailureThreshold, dhcpFallbackDuration)
 }
 
 func set(rtc *os.File) error {
-	updateServers()
+	fromDHCP := updateServers()
 	server := servers[rand.Intn(len(servers))]
 	r, err := ntp.Query(server)
 	if err != nil {
+		if fromDHCP {
+			dhcpQueryFailed()
+		}
 		return err
 	}
+	dhcpFailures = 0
 
 	if err := setTimeOfDay(r.Time, server); err != nil {
 		return fmt.Errorf("setTimeOfDay: %v", err)

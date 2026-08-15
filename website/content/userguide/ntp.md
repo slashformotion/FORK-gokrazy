@@ -18,7 +18,8 @@ The NTP client determines which servers to query in the following order:
 3. The default `*.gokrazy.pool.ntp.org` server pool
 
 If your DHCP server is configured to provide NTP servers (DHCP option 42),
-they are used automatically — no configuration required.
+they are used automatically — no configuration required. If they cannot be
+reached, the default pool is used temporarily.
 
 To use your own NTP servers instead, specify them as positional [command-line
 flags](/userguide/package-config/):
